@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // Generate content using the new SDK
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.0-flash-lite",
       contents: [
         {
           role: "user",
