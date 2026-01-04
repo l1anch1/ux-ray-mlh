@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Upload, 
@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { AuditReport, AuditResult } from "@/components/AuditReport"
+import { XRayOverlay } from "@/components/XRayOverlay"
+import { ExportReport } from "@/components/ExportReport"
 
 const LOADING_MESSAGES = [
   "Calibrating lens...",
@@ -190,6 +192,7 @@ export default function Home() {
   const [result, setResult] = useState<AuditResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const reportRef = useRef<HTMLDivElement>(null)
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -317,7 +320,7 @@ export default function Home() {
               Reveal the invisible flaws in your UI.
             </p>
             <p className="text-sm text-muted-foreground/60 font-mono">
-              Powered by Gemini 3 Pro • X-Ray vision for designers
+              Powered by Gemini 3 flash • X-Ray vision for designers
             </p>
           </div>
         </motion.header>
@@ -505,7 +508,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
                 >
-                  {/* Back button */}
+                  {/* Back button and actions */}
                   <div className="flex items-center justify-between">
                     <Button 
                       variant="ghost" 
@@ -514,51 +517,71 @@ export default function Home() {
                     >
                       ← Scan another
                     </Button>
-                    <motion.div 
-                      className="flex items-center gap-2 text-sm text-primary font-mono"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      Diagnosis complete
-                    </motion.div>
+                    <div className="flex items-center gap-4">
+                      <motion.div 
+                        className="flex items-center gap-2 text-sm text-primary font-mono"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Diagnosis complete
+                      </motion.div>
+                      {/* Export Button */}
+                      <ExportReport 
+                        result={result} 
+                        imageUrl={preview!} 
+                        reportRef={reportRef} 
+                      />
+                    </div>
                   </div>
 
-                  {/* Two column layout - split view */}
-                  <div className="grid lg:grid-cols-5 gap-8">
-                    {/* Left: Preview column */}
-                    <motion.div 
-                      className="lg:col-span-2"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <Card className="overflow-hidden sticky top-8">
-                        <div className="aspect-video bg-black/80">
-                          <img
-                            src={preview!}
-                            alt="Analyzed UI"
-                            className="w-full h-full object-contain"
-                          />
+                  {/* Exportable report container */}
+                  <div ref={reportRef} className="bg-background">
+                    {/* Two column layout - split view */}
+                    <div className="grid lg:grid-cols-5 gap-8">
+                      {/* Left: X-Ray Preview column */}
+                      <motion.div 
+                        className="lg:col-span-2"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <div className="sticky top-8">
+                          {result.annotations && result.annotations.length > 0 ? (
+                            <XRayOverlay 
+                              imageUrl={preview!} 
+                              annotations={result.annotations} 
+                            />
+                          ) : (
+                            <Card className="overflow-hidden">
+                              <div className="aspect-video bg-black/80">
+                                <img
+                                  src={preview!}
+                                  alt="Analyzed UI"
+                                  className="w-full h-full object-contain"
+                                />
+                              </div>
+                              <div className="p-4 border-t border-border/50 bg-card/50">
+                                <p className="text-xs text-muted-foreground font-mono">
+                                  {image?.name}
+                                </p>
+                              </div>
+                            </Card>
+                          )}
                         </div>
-                        <div className="p-4 border-t border-border/50 bg-card/50">
-                          <p className="text-xs text-muted-foreground font-mono">
-                            {image?.name}
-                          </p>
-                        </div>
-                      </Card>
-                    </motion.div>
+                      </motion.div>
 
-                    {/* Right: Results column */}
-                    <motion.div 
-                      className="lg:col-span-3"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <AuditReport result={result} />
-                    </motion.div>
+                      {/* Right: Results column */}
+                      <motion.div 
+                        className="lg:col-span-3"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <AuditReport result={result} />
+                      </motion.div>
+                    </div>
                   </div>
                 </motion.div>
               )}

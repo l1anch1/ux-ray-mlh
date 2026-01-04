@@ -27,6 +27,17 @@ export interface CategoryScore {
   comment: string
 }
 
+export interface Annotation {
+  id: number
+  x: number
+  y: number
+  width: number
+  height: number
+  severity: "critical" | "warning" | "info"
+  label: string
+  description: string
+}
+
 export interface AuditResult {
   score: number
   summary: string
@@ -37,6 +48,7 @@ export interface AuditResult {
   }
   criticalIssues: string[]
   quickFixes: string[]
+  annotations?: Annotation[]
 }
 
 interface AuditReportProps {
