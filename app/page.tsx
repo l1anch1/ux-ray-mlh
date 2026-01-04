@@ -131,6 +131,58 @@ function XRayScanner() {
   )
 }
 
+// Compress image to reduce size for API
+async function compressImage(file: File, maxSizeKB: number = 500): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+        
+        // Scale down if too large
+        const maxDimension = 1200
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height / width) * maxDimension
+            width = maxDimension
+          } else {
+            width = (width / height) * maxDimension
+            height = maxDimension
+          }
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        // Compress with decreasing quality until under maxSizeKB
+        let quality = 0.8
+        let result = canvas.toDataURL('image/jpeg', quality)
+        
+        while (result.length > maxSizeKB * 1024 * 1.37 && quality > 0.1) {
+          quality -= 0.1
+          result = canvas.toDataURL('image/jpeg', quality)
+        }
+        
+        resolve(result)
+      }
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = e.target?.result as string
+    }
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function Home() {
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -186,13 +238,8 @@ export default function Home() {
     setError(null)
 
     try {
-      const reader = new FileReader()
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = reject
-      })
-      reader.readAsDataURL(image)
-      const base64Data = await base64Promise
+      // Compress image to avoid 413 error (max ~500KB)
+      const compressedImage = await compressImage(image, 500)
 
       const response = await fetch("/api/audit", {
         method: "POST",
@@ -200,8 +247,8 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          image: base64Data,
-          mimeType: image.type || "image/png",
+          image: compressedImage,
+          mimeType: "image/jpeg",
         }),
       })
 
@@ -525,7 +572,7 @@ export default function Home() {
             <p className="font-mono">Built for Hacks for Hackers • MLH 🚀</p>
             <p>UX-Ray • AI-Powered Design X-Ray</p>
           </div>
-        </footer>
+      </footer>
       </div>
     </div>
   )
