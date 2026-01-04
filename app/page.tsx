@@ -14,10 +14,6 @@ import {
   Shield,
   Palette,
   ArrowRight,
-  Check,
-  MousePointer2,
-  Layers,
-  Target,
   ChevronDown
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
