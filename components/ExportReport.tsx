@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import { Download, Share2, Check, Loader2, Image as ImageIcon, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,7 @@ interface ExportReportProps {
   reportRef: React.RefObject<HTMLDivElement>
 }
 
-export function ExportReport({ result, imageUrl, reportRef }: ExportReportProps) {
+export function ExportReport({ result, imageUrl: _imageUrl, reportRef }: ExportReportProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [exportSuccess, setExportSuccess] = useState(false)
 
