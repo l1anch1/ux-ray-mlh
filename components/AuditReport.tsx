@@ -61,7 +61,7 @@ const categoryConfig = {
   },
 }
 
-function ScoreBadge({ score }: { score: number }) {
+function ScoreBadge({ score, summary }: { score: number; summary: string }) {
   const getGrade = (score: number) => {
     if (score >= 90) return { grade: "A+", label: "Outstanding", icon: Award }
     if (score >= 80) return { grade: "A", label: "Excellent", icon: TrendingUp }
@@ -131,7 +131,7 @@ function ScoreBadge({ score }: { score: number }) {
           </div>
           <h2 className="text-2xl font-bold mb-3">Design Verdict</h2>
           <p className={`text-lg leading-relaxed ${colors.text} font-bold font-mono`}>
-            &ldquo;{result.summary}&rdquo;
+            &ldquo;{summary}&rdquo;
           </p>
         </div>
       </div>
@@ -200,7 +200,7 @@ export function AuditReport({ result }: AuditReportProps) {
   return (
     <div className="space-y-6">
       {/* Giant Score Badge */}
-      <ScoreBadge score={result.score} />
+      <ScoreBadge score={result.score} summary={result.summary} />
 
       {/* Category Breakdown */}
       <CategorySection result={result} />
