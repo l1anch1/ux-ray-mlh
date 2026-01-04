@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Upload, 
-  Zap, 
   X, 
   ImageIcon,
   Scan,
