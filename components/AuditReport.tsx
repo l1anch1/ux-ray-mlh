@@ -1,14 +1,16 @@
 "use client"
 
 import { 
-  AlertTriangle, 
   Eye, 
   Layers, 
-  Lightbulb, 
-  Target,
   CheckCircle,
   XCircle,
-  AlertCircle
+  Wrench,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Flame,
+  Award
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,134 +22,130 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 
-export interface AuditIssue {
-  id: string
-  title: string
-  description: string
-  severity: "critical" | "warning" | "info"
-  location?: string
-  suggestion: string
-}
-
-export interface AuditCategory {
-  name: string
+export interface CategoryScore {
   score: number
-  issues: AuditIssue[]
+  comment: string
 }
 
 export interface AuditResult {
-  overallScore: number
+  score: number
   summary: string
   categories: {
-    accessibility: AuditCategory
-    visualHierarchy: AuditCategory
-    usability: AuditCategory
-    consistency: AuditCategory
+    visualHierarchy: CategoryScore
+    accessibility: CategoryScore
+    consistency: CategoryScore
   }
-  topRecommendations: string[]
+  criticalIssues: string[]
+  quickFixes: string[]
 }
 
 interface AuditReportProps {
   result: AuditResult
 }
 
-const severityConfig = {
-  critical: {
-    badge: "critical" as const,
-    icon: XCircle,
-    label: "Critical",
-  },
-  warning: {
-    badge: "warning" as const,
-    icon: AlertCircle,
-    label: "Warning",
-  },
-  info: {
-    badge: "info" as const,
-    icon: AlertTriangle,
-    label: "Info",
-  },
-}
-
 const categoryConfig = {
-  accessibility: {
-    icon: Eye,
-    label: "Accessibility",
-    description: "Screen reader, contrast, and WCAG compliance",
-  },
   visualHierarchy: {
     icon: Layers,
     label: "Visual Hierarchy",
-    description: "Layout, spacing, and visual flow",
+    emoji: "👁️",
   },
-  usability: {
-    icon: Target,
-    label: "Usability",
-    description: "User interaction and task completion",
+  accessibility: {
+    icon: Eye,
+    label: "Accessibility",
+    emoji: "♿",
   },
   consistency: {
     icon: CheckCircle,
     label: "Consistency",
-    description: "Design patterns and component uniformity",
+    emoji: "🎨",
   },
 }
 
-function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
-  const strokeWidth = 8
-  const radius = (size - strokeWidth) / 2
-  const circumference = radius * 2 * Math.PI
-  const offset = circumference - (score / 100) * circumference
-  
-  const getColor = (score: number) => {
-    if (score >= 80) return "stroke-emerald-400"
-    if (score >= 60) return "stroke-amber-400"
-    return "stroke-red-400"
+function ScoreBadge({ score }: { score: number }) {
+  const getGrade = (score: number) => {
+    if (score >= 90) return { grade: "A+", label: "Outstanding", icon: Award }
+    if (score >= 80) return { grade: "A", label: "Excellent", icon: TrendingUp }
+    if (score >= 70) return { grade: "B", label: "Good", icon: TrendingUp }
+    if (score >= 60) return { grade: "C", label: "Fair", icon: Minus }
+    if (score >= 50) return { grade: "D", label: "Poor", icon: TrendingDown }
+    return { grade: "F", label: "Critical", icon: Flame }
   }
 
+  const getColors = (score: number) => {
+    if (score >= 80) return {
+      bg: "from-emerald-500/20 to-emerald-600/20",
+      border: "border-emerald-500/50",
+      text: "text-emerald-400",
+      glow: "shadow-emerald-500/20",
+    }
+    if (score >= 60) return {
+      bg: "from-amber-500/20 to-amber-600/20",
+      border: "border-amber-500/50",
+      text: "text-amber-400",
+      glow: "shadow-amber-500/20",
+    }
+    return {
+      bg: "from-red-500/20 to-red-600/20",
+      border: "border-red-500/50",
+      text: "text-red-400",
+      glow: "shadow-red-500/20",
+    }
+  }
+
+  const gradeInfo = getGrade(score)
+  const colors = getColors(score)
+  const GradeIcon = gradeInfo.icon
+
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg className="transform -rotate-90" width={size} height={size}>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          fill="none"
-          className="text-secondary"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          className={`${getColor(score)} transition-all duration-1000`}
-          style={{
-            strokeDasharray: circumference,
-            strokeDashoffset: offset,
-          }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold text-foreground">{score}</span>
-        <span className="text-xs text-muted-foreground">/ 100</span>
+    <div className={`relative p-8 rounded-3xl bg-gradient-to-br ${colors.bg} border ${colors.border} shadow-2xl ${colors.glow}`}>
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden rounded-3xl">
+        <div className={`absolute -top-24 -right-24 w-48 h-48 rounded-full ${colors.bg} blur-3xl opacity-50`} />
+      </div>
+
+      <div className="relative flex items-center gap-8">
+        {/* Score circle */}
+        <div className="relative">
+          <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${colors.bg} border-4 ${colors.border} flex items-center justify-center`}>
+            <div className="text-center">
+              <span className={`text-5xl font-black ${colors.text}`}>{score}</span>
+              <span className="text-lg text-muted-foreground">/100</span>
+            </div>
+          </div>
+          {/* Grade badge */}
+          <div className={`absolute -bottom-2 -right-2 px-3 py-1 rounded-full bg-background border ${colors.border} ${colors.text} font-bold text-sm flex items-center gap-1`}>
+            <GradeIcon className="w-3 h-3" />
+            {gradeInfo.grade}
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <Badge 
+              variant={score >= 70 ? "success" : score >= 50 ? "warning" : "critical"}
+              className="text-xs font-bold uppercase tracking-wider"
+            >
+              {gradeInfo.label}
+            </Badge>
+          </div>
+          <h2 className="text-2xl font-bold mb-3">Design Verdict</h2>
+          <p className={`text-lg leading-relaxed ${colors.text} font-bold font-mono`}>
+            &ldquo;{result.summary}&rdquo;
+          </p>
+        </div>
       </div>
     </div>
   )
 }
 
-function CategoryCard({ 
-  categoryKey, 
-  category 
-}: { 
-  categoryKey: keyof typeof categoryConfig
-  category: AuditCategory 
-}) {
-  const config = categoryConfig[categoryKey]
-  const Icon = config.icon
-  
+function CategorySection({ result }: { result: AuditResult }) {
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "text-emerald-400"
+    if (score >= 60) return "text-amber-400"
+    return "text-red-400"
+  }
+
   const getProgressColor = (score: number) => {
     if (score >= 80) return "bg-emerald-400"
     if (score >= 60) return "bg-amber-400"
@@ -155,144 +153,130 @@ function CategoryCard({
   }
 
   return (
-    <Card className="bg-card/50 border-border/50 backdrop-blur">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Icon className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-medium">{config.label}</CardTitle>
-              <p className="text-xs text-muted-foreground">{config.description}</p>
-            </div>
+    <Accordion type="single" collapsible defaultValue="categories" className="space-y-3">
+      <AccordionItem value="categories" className="border rounded-xl bg-card/50 overflow-hidden">
+        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/30">
+          <div className="flex items-center gap-3">
+            <span className="text-lg">📊</span>
+            <span className="font-semibold">Category Breakdown</span>
           </div>
-          <span className="text-2xl font-bold">{category.score}</span>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Progress 
-          value={category.score} 
-          className="h-1.5"
-          indicatorClassName={getProgressColor(category.score)}
-        />
-        
-        {category.issues.length > 0 && (
-          <Accordion type="single" collapsible className="mt-4">
-            <AccordionItem value="issues" className="border-none">
-              <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline py-2">
-                {category.issues.length} issue{category.issues.length !== 1 ? 's' : ''} found
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-3">
-                  {category.issues.map((issue) => {
-                    const severityInfo = severityConfig[issue.severity]
-                    const SeverityIcon = severityInfo.icon
-                    
-                    return (
-                      <div 
-                        key={issue.id} 
-                        className="p-3 rounded-lg bg-background/50 border border-border/50"
-                      >
-                        <div className="flex items-start gap-2">
-                          <SeverityIcon className={`h-4 w-4 mt-0.5 ${
-                            issue.severity === 'critical' ? 'text-red-400' :
-                            issue.severity === 'warning' ? 'text-amber-400' : 'text-cyan-400'
-                          }`} />
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">{issue.title}</span>
-                              <Badge variant={severityInfo.badge} className="text-[10px] px-1.5 py-0">
-                                {severityInfo.label}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">{issue.description}</p>
-                            {issue.location && (
-                              <p className="text-xs text-muted-foreground/70">
-                                📍 {issue.location}
-                              </p>
-                            )}
-                            <div className="mt-2 p-2 rounded bg-primary/5 border border-primary/20">
-                              <p className="text-xs text-primary flex items-start gap-1.5">
-                                <Lightbulb className="h-3 w-3 mt-0.5 shrink-0" />
-                                {issue.suggestion}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
+        </AccordionTrigger>
+        <AccordionContent className="px-6 pb-6">
+          <div className="space-y-4">
+            {(Object.keys(categoryConfig) as Array<keyof typeof categoryConfig>).map((key) => {
+              const config = categoryConfig[key]
+              const category = result.categories[key]
+              
+              return (
+                <div key={key} className="p-4 rounded-xl bg-background/50 border border-border/50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{config.emoji}</span>
+                      <span className="font-semibold">{config.label}</span>
+                    </div>
+                    <span className={`text-2xl font-black ${getScoreColor(category.score)}`}>
+                      {category.score}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={category.score} 
+                    className="h-2 mb-3"
+                    indicatorClassName={getProgressColor(category.score)}
+                  />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {category.comment}
+                  </p>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
-        
-        {category.issues.length === 0 && (
-          <p className="text-xs text-emerald-400 mt-3 flex items-center gap-1">
-            <CheckCircle className="h-3 w-3" />
-            No issues found
-          </p>
-        )}
-      </CardContent>
-    </Card>
+              )
+            })}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   )
 }
 
 export function AuditReport({ result }: AuditReportProps) {
   return (
     <div className="space-y-6">
-      {/* Overall Score */}
-      <Card className="bg-gradient-to-br from-card via-card to-primary/5 border-primary/20">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-6">
-            <ScoreRing score={result.overallScore} />
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold mb-2">Overall UX Score</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {result.summary}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Giant Score Badge */}
+      <ScoreBadge score={result.score} />
 
-      {/* Category Scores */}
-      <div className="grid gap-4">
-        {(Object.keys(categoryConfig) as Array<keyof typeof categoryConfig>).map((key) => (
-          <CategoryCard 
-            key={key} 
-            categoryKey={key} 
-            category={result.categories[key]} 
-          />
-        ))}
-      </div>
+      {/* Category Breakdown */}
+      <CategorySection result={result} />
 
-      {/* Top Recommendations */}
-      {result.topRecommendations.length > 0 && (
-        <Card className="bg-card/50 border-accent/30">
-          <CardHeader>
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-accent" />
-              Top Recommendations
+      {/* Critical Issues */}
+      {result.criticalIssues.length > 0 && (
+        <Card className="border-red-500/30 bg-red-500/5 overflow-hidden">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-red-400">
+              <div className="p-2 rounded-lg bg-red-500/20">
+                <XCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="text-lg font-bold">Critical Issues</span>
+                <p className="text-sm font-normal text-red-400/70 mt-0.5">
+                  Fix these ASAP before your demo
+                </p>
+              </div>
+              <Badge variant="critical" className="ml-auto">
+                {result.criticalIssues.length}
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ol className="space-y-2">
-              {result.topRecommendations.map((rec, index) => (
-                <li key={index} className="flex items-start gap-3 text-sm">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">
+            <ul className="space-y-3">
+              {result.criticalIssues.map((issue, index) => (
+                <li key={index} className="flex items-start gap-4 p-3 rounded-lg bg-background/50 border border-red-500/20">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-red-500/20 text-red-400 text-sm font-bold flex items-center justify-center">
                     {index + 1}
                   </span>
-                  <span className="text-muted-foreground pt-0.5">{rec}</span>
+                  <span className="text-sm leading-relaxed pt-1">{issue}</span>
                 </li>
               ))}
-            </ol>
+            </ul>
           </CardContent>
         </Card>
       )}
+
+      {/* Quick Fixes */}
+      {result.quickFixes.length > 0 && (
+        <Card className="border-accent/30 bg-accent/5 overflow-hidden">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-accent">
+              <div className="p-2 rounded-lg bg-accent/20">
+                <Wrench className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="text-lg font-bold">Quick Fixes</span>
+                <p className="text-sm font-normal text-accent/70 mt-0.5">
+                  Low-effort, high-impact improvements
+                </p>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3">
+              {result.quickFixes.map((fix, index) => (
+                <li key={index} className="flex items-start gap-4 p-3 rounded-lg bg-background/50 border border-accent/20">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-accent/20 text-accent text-sm font-bold flex items-center justify-center">
+                    ✓
+                  </span>
+                  <span className="text-sm text-muted-foreground leading-relaxed pt-1">{fix}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Pro tip */}
+      <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-center">
+        <p className="text-sm text-muted-foreground">
+          💡 <span className="text-primary font-medium">Pro tip:</span> Focus on critical issues first, then quick fixes. 
+          Small improvements compound into great UX.
+        </p>
+      </div>
     </div>
   )
 }
-

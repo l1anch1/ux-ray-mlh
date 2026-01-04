@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔬 UX-Ray
 
-## Getting Started
+> X-Ray vision into bad UI design — AI-powered UX audit tool
 
-First, run the development server:
+Upload a screenshot of your app, and Gemini Vision scans it like an X-Ray to reveal hidden UX/UI flaws.
+
+## ✨ Features
+
+- 📸 **Screenshot Upload** — Drag & drop or click to upload
+- 🤖 **AI Analysis** — Powered by Google Gemini 2.0 Flash
+- 📊 **Detailed Scores** — Visual Hierarchy, Accessibility, Consistency
+- 🔴 **Critical Issues** — Immediate problems to fix
+- 💡 **Quick Fixes** — Low-effort, high-impact improvements
+
+## 🚀 Getting Started
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure API Key
+
+```bash
+cp .env.local.example .env.local
+```
+
+Edit `.env.local` and add your Gemini API key:
+
+```
+GEMINI_API_KEY=your_api_key_here
+```
+
+Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+
+### 3. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠 Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn/ui
+- **Icons**: Lucide React
+- **Animation**: Framer Motion
+- **AI**: Google Gemini 3 Pro Preview
 
-## Learn More
+## 📁 Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+├── app/
+│   ├── api/audit/route.ts    # Gemini Vision API endpoint
+│   ├── globals.css           # Global styles
+│   ├── layout.tsx            # Root layout
+│   └── page.tsx              # Main page
+├── components/
+│   ├── AuditReport.tsx       # Results display component
+│   └── ui/                   # Shadcn UI components
+└── lib/
+    └── utils.ts              # Utility functions
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📝 License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT — Built for **Hacks for Hackers** hosted by MLH 🚀

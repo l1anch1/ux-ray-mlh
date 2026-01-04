@@ -1,24 +1,141 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { 
   Upload, 
-  Scan, 
   Zap, 
   X, 
   ImageIcon,
-  Loader2,
+  Scan,
   Sparkles,
-  Radio
+  Skull
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { AuditReport, AuditResult } from "@/components/AuditReport"
 
+const LOADING_MESSAGES = [
+  "Calibrating lens...",
+  "Detecting contrast violations...",
+  "Judging your font choices...",
+  "Analyzing visual hierarchy...",
+  "Counting accessibility sins...",
+  "Measuring whitespace anxiety...",
+  "Scanning for design crimes...",
+  "Evaluating color harmony...",
+  "Computing brutality level...",
+  "Preparing diagnosis...",
+]
+
+function XRayScanner() {
+  const [messageIndex, setMessageIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length)
+    }, 1800)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 overflow-hidden">
+      {/* Scan line animation with framer-motion */}
+      <motion.div
+        className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_30px_10px_rgba(0,255,136,0.4)]"
+        initial={{ top: "0%" }}
+        animate={{ top: ["0%", "100%", "0%"] }}
+        transition={{
+          duration: 2.5,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
+      {/* Horizontal scan lines overlay */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,255,136,0.02)_50%)] bg-[length:100%_4px]" />
+      </div>
+
+      {/* Corner brackets */}
+      <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-primary/60" />
+      <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-primary/60" />
+      <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-primary/60" />
+      <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-primary/60" />
+
+      {/* Center content */}
+      <motion.div 
+        className="relative z-10 text-center"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        {/* Pulsing scanner icon */}
+        <div className="relative w-20 h-20 mx-auto mb-6">
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-primary/50"
+            animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-primary/30"
+            animate={{ scale: [1, 1.8, 1], opacity: [0.3, 0, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            >
+              <Scan className="w-10 h-10 text-primary" />
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Status text */}
+        <div className="font-mono text-sm space-y-3">
+          <motion.p 
+            className="text-primary font-bold"
+            animate={{ opacity: [1, 0.5, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            SCANNING IN PROGRESS
+          </motion.p>
+          
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={messageIndex}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="text-muted-foreground h-5"
+            >
+              {LOADING_MESSAGES[messageIndex]}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+
+        {/* Progress dots */}
+        <div className="mt-6 flex items-center justify-center gap-2">
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="w-2 h-2 rounded-full bg-primary"
+              animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
+              transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }}
+            />
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 export default function Home() {
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isScanning, setIsScanning] = useState(false)
   const [result, setResult] = useState<AuditResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -63,19 +180,30 @@ export default function Home() {
     setError(null)
   }, [])
 
-  const analyzeImage = async () => {
+  const scanUI = async () => {
     if (!image) return
 
-    setIsAnalyzing(true)
+    setIsScanning(true)
     setError(null)
 
     try {
-      const formData = new FormData()
-      formData.append("image", image)
+      const reader = new FileReader()
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+      })
+      reader.readAsDataURL(image)
+      const base64Data = await base64Promise
 
       const response = await fetch("/api/audit", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image: base64Data,
+          mimeType: image.type || "image/png",
+        }),
       })
 
       if (!response.ok) {
@@ -88,226 +216,315 @@ export default function Home() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to analyze image")
     } finally {
-      setIsAnalyzing(false)
+      setIsScanning(false)
     }
   }
 
+  const resetAll = useCallback(() => {
+    setImage(null)
+    setPreview(null)
+    setResult(null)
+    setError(null)
+  }, [])
+
   return (
-    <div className="min-h-screen bg-background grid-pattern">
-      {/* Ambient glow effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 -left-1/4 w-1/2 h-1/2 bg-primary/5 rounded-full blur-[128px]" />
-        <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-accent/5 rounded-full blur-[128px]" />
+    <div className="min-h-screen bg-background">
+      {/* Animated background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(0,255,136,0.1),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(0,255,255,0.05),transparent_50%)]" />
+        <div className="absolute inset-0 grid-pattern opacity-30" />
       </div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Scan className="w-5 h-5 text-background" />
-                  </div>
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse-glow" />
+        <motion.header 
+          className="pt-12 pb-6 px-6 text-center"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="max-w-4xl mx-auto">
+            {/* Logo */}
+            <div className="inline-flex items-center justify-center gap-3 mb-6">
+              <div className="relative">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
+                  <Scan className="w-7 h-7 text-background" />
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold tracking-tight">
-                    UX-Ray
-                  </h1>
-                  <p className="text-xs text-muted-foreground">
-                    AI-Powered Design Audit
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Radio className="w-3 h-3 text-primary animate-pulse" />
-                <span>Powered by Gemini Vision</span>
+                <motion.div 
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full shadow-lg shadow-accent/50"
+                  animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
               </div>
             </div>
+
+            {/* Title */}
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4">
+              <span className="bg-gradient-to-r from-primary via-emerald-400 to-accent bg-clip-text text-transparent">
+                UX-Ray
+              </span>
+            </h1>
+
+            {/* Tagline */}
+            <p className="text-xl md:text-2xl text-muted-foreground font-medium mb-2">
+              Reveal the invisible flaws in your UI.
+            </p>
+            <p className="text-sm text-muted-foreground/60 font-mono">
+              Powered by Gemini 3 Pro • X-Ray vision for designers
+            </p>
           </div>
-        </header>
+        </motion.header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-6 py-8">
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Left Panel - Upload */}
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-2">
-                  Scan Your Interface
-                </h2>
-                <p className="text-muted-foreground">
-                  Upload a screenshot and let our AI reveal hidden UX flaws
-                </p>
-              </div>
-
-              {/* Upload Zone */}
-              <Card 
-                className={`relative overflow-hidden transition-all duration-300 ${
-                  isDragging 
-                    ? "border-primary border-2 xray-glow" 
-                    : "border-dashed border-2 hover:border-primary/50"
-                }`}
-              >
-                {preview ? (
-                  <div className="relative">
-                    {/* Image Preview */}
-                    <div className="relative aspect-video bg-black/50">
-                      <img
-                        src={preview}
-                        alt="Preview"
-                        className="w-full h-full object-contain"
-                      />
-                      
-                      {/* Scanning overlay */}
-                      {isAnalyzing && (
-                        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex flex-col items-center justify-center">
-                          <div className="absolute inset-0 overflow-hidden">
-                            <div className="scan-overlay w-full h-20 animate-scan-line" />
-                          </div>
-                          <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
-                          <p className="text-sm text-primary font-medium">Analyzing design...</p>
-                          <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Clear button */}
-                    {!isAnalyzing && (
-                      <button
-                        onClick={clearImage}
-                        className="absolute top-3 right-3 p-2 rounded-full bg-background/80 backdrop-blur hover:bg-destructive/20 hover:text-destructive transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-
-                    {/* File info */}
-                    <div className="p-4 border-t border-border/50 bg-card/50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm truncate max-w-[200px]">{image?.name}</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {image && (image.size / 1024).toFixed(1)} KB
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <label
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    className="flex flex-col items-center justify-center p-12 cursor-pointer group"
-                  >
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileInput}
-                      className="hidden"
-                    />
-                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                      <Upload className="w-8 h-8 text-primary" />
-                    </div>
-                    <p className="text-lg font-medium mb-1">
-                      Drop your screenshot here
-                    </p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      or click to browse
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>PNG, JPG, WebP</span>
-                      <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-                      <span>Max 10MB</span>
-                    </div>
-                  </label>
-                )}
-              </Card>
-
-              {/* Analyze Button */}
-              {preview && !isAnalyzing && (
-                <Button 
-                  onClick={analyzeImage} 
-                  size="lg" 
-                  variant="glow"
-                  className="w-full text-base font-semibold"
+        <main className="flex-1 px-6 pb-16">
+          <div className="max-w-6xl mx-auto">
+            <AnimatePresence mode="wait">
+              {!result ? (
+                /* Upload Section */
+                <motion.div 
+                  key="upload"
+                  className="max-w-2xl mx-auto space-y-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <Zap className="w-5 h-5" />
-                  Start X-Ray Analysis
-                </Button>
-              )}
+                  {/* Drop Zone */}
+                  <Card 
+                    className={`relative overflow-hidden transition-all duration-300 ${
+                      isDragging 
+                        ? "border-primary border-2 shadow-lg shadow-primary/20" 
+                        : "border-dashed border-2 border-border/50 hover:border-primary/50"
+                    } ${preview ? "border-solid" : ""}`}
+                  >
+                    {preview ? (
+                      <div className="relative">
+                        {/* Image Preview */}
+                        <div className="relative aspect-video bg-black/80">
+                          <img
+                            src={preview}
+                            alt="Preview"
+                            className="w-full h-full object-contain"
+                          />
+                          
+                          {/* X-Ray Scanner overlay */}
+                          {isScanning && <XRayScanner />}
+                        </div>
 
-              {/* Error Display */}
-              {error && (
-                <Card className="p-4 border-destructive/50 bg-destructive/10">
-                  <p className="text-sm text-destructive">{error}</p>
-                </Card>
-              )}
+                        {/* Clear button */}
+                        {!isScanning && (
+                          <button
+                            onClick={clearImage}
+                            className="absolute top-4 right-4 p-2.5 rounded-xl bg-background/90 backdrop-blur border border-border/50 hover:bg-destructive/20 hover:border-destructive/50 hover:text-destructive transition-all"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
 
-              {/* Features */}
-              {!preview && (
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { icon: "🎯", title: "Accessibility", desc: "WCAG compliance check" },
-                    { icon: "👁️", title: "Visual Hierarchy", desc: "Layout & spacing analysis" },
-                    { icon: "🖱️", title: "Usability", desc: "Interaction patterns" },
-                    { icon: "🎨", title: "Consistency", desc: "Design system alignment" },
-                  ].map((feature) => (
-                    <Card 
-                      key={feature.title}
-                      className="p-4 bg-card/30 border-border/30 hover:bg-card/50 transition-colors"
+                        {/* File info bar */}
+                        <div className="p-4 border-t border-border/50 bg-card/80 backdrop-blur">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-primary/10">
+                                <ImageIcon className="w-4 h-4 text-primary" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium truncate max-w-[200px]">{image?.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {image && (image.size / 1024).toFixed(1)} KB
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-xs text-muted-foreground font-mono">
+                              {isScanning ? "Scanning..." : "Ready"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <label
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        className="flex flex-col items-center justify-center p-16 cursor-pointer group"
+                      >
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileInput}
+                          className="hidden"
+                        />
+                        
+                        {/* Upload icon */}
+                        <motion.div 
+                          className="relative mb-6"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ type: "spring", stiffness: 400 }}
+                        >
+                          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center group-hover:from-primary/30 group-hover:to-accent/30 transition-all">
+                            <Upload className="w-10 h-10 text-primary group-hover:scale-110 transition-transform" />
+                          </div>
+                          <div className="absolute -inset-2 rounded-3xl border border-primary/20 group-hover:border-primary/40 transition-colors" />
+                        </motion.div>
+
+                        <p className="text-xl font-bold mb-2">
+                          Drop your UI screenshot here
+                        </p>
+                        <p className="text-muted-foreground mb-6">
+                          or click to browse files
+                        </p>
+                        
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground/60 font-mono">
+                          <span className="px-2 py-1 rounded bg-muted/30">PNG</span>
+                          <span className="px-2 py-1 rounded bg-muted/30">JPG</span>
+                          <span className="px-2 py-1 rounded bg-muted/30">WebP</span>
+                          <span className="text-muted-foreground/40">•</span>
+                          <span>Max 10MB</span>
+                        </div>
+                      </label>
+                    )}
+                  </Card>
+
+                  {/* Scan Button */}
+                  {preview && !isScanning && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
                     >
-                      <span className="text-2xl mb-2 block">{feature.icon}</span>
-                      <h3 className="font-medium text-sm mb-1">{feature.title}</h3>
-                      <p className="text-xs text-muted-foreground">{feature.desc}</p>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
+                      <Button 
+                        onClick={scanUI} 
+                        size="lg" 
+                        className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
+                      >
+                        <Scan className="w-6 h-6 mr-2" />
+                        Scan UI
+                      </Button>
+                    </motion.div>
+                  )}
 
-            {/* Right Panel - Results */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Analysis Report</h2>
-                {result && (
-                  <div className="flex items-center gap-2 text-xs text-primary">
-                    <Sparkles className="w-4 h-4" />
-                    <span>Scan Complete</span>
-                  </div>
-                )}
-              </div>
+                  {/* Error Display */}
+                  <AnimatePresence>
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                      >
+                        <Card className="p-4 border-destructive/50 bg-destructive/10">
+                          <div className="flex items-center gap-3">
+                            <Skull className="w-5 h-5 text-destructive" />
+                            <p className="text-sm text-destructive">{error}</p>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-              {result ? (
-                <AuditReport result={result} />
+                  {/* Features Preview */}
+                  {!preview && (
+                    <motion.div 
+                      className="grid grid-cols-3 gap-4 mt-12"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      {[
+                        { icon: "👁️", label: "Visual Hierarchy", desc: "Layout & flow" },
+                        { icon: "♿", label: "Accessibility", desc: "WCAG checks" },
+                        { icon: "🎨", label: "Consistency", desc: "Design patterns" },
+                      ].map((feature, i) => (
+                        <motion.div 
+                          key={feature.label}
+                          className="text-center p-4 rounded-xl bg-card/30 border border-border/30 hover:bg-card/50 transition-colors"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.4 + i * 0.1 }}
+                        >
+                          <span className="text-3xl block mb-2">{feature.icon}</span>
+                          <p className="font-medium text-sm">{feature.label}</p>
+                          <p className="text-xs text-muted-foreground">{feature.desc}</p>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+                </motion.div>
               ) : (
-                <Card className="flex flex-col items-center justify-center p-12 border-dashed bg-card/30 min-h-[400px]">
-                  <div className="w-20 h-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
-                    <Scan className="w-10 h-10 text-muted-foreground/50" />
+                /* Results Section */
+                <motion.div 
+                  key="results"
+                  className="space-y-8"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  {/* Back button */}
+                  <div className="flex items-center justify-between">
+                    <Button 
+                      variant="ghost" 
+                      onClick={resetAll}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      ← Scan another
+                    </Button>
+                    <motion.div 
+                      className="flex items-center gap-2 text-sm text-primary font-mono"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Diagnosis complete
+                    </motion.div>
                   </div>
-                  <p className="text-lg font-medium text-muted-foreground mb-2">
-                    No analysis yet
-                  </p>
-                  <p className="text-sm text-muted-foreground/70 text-center max-w-xs">
-                    Upload a screenshot and click &quot;Start X-Ray Analysis&quot; to reveal UX insights
-                  </p>
-                </Card>
+
+                  {/* Two column layout - split view */}
+                  <div className="grid lg:grid-cols-5 gap-8">
+                    {/* Left: Preview column */}
+                    <motion.div 
+                      className="lg:col-span-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <Card className="overflow-hidden sticky top-8">
+                        <div className="aspect-video bg-black/80">
+                          <img
+                            src={preview!}
+                            alt="Analyzed UI"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="p-4 border-t border-border/50 bg-card/50">
+                          <p className="text-xs text-muted-foreground font-mono">
+                            {image?.name}
+                          </p>
+                        </div>
+                      </Card>
+                    </motion.div>
+
+                    {/* Right: Results column */}
+                    <motion.div 
+                      className="lg:col-span-3"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <AuditReport result={result} />
+                    </motion.div>
+                  </div>
+                </motion.div>
               )}
-            </div>
+            </AnimatePresence>
           </div>
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-border/50 mt-16">
-          <div className="max-w-7xl mx-auto px-6 py-6">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <p>Built for Hackathon 2026 🚀</p>
-              <p>UX-Ray • AI-Powered Design Audits</p>
-            </div>
+        <footer className="border-t border-border/30 py-6 px-6">
+          <div className="max-w-6xl mx-auto flex items-center justify-between text-xs text-muted-foreground/60">
+            <p className="font-mono">Built for Hacks for Hackers • MLH 🚀</p>
+            <p>UX-Ray • AI-Powered Design X-Ray</p>
           </div>
         </footer>
       </div>
